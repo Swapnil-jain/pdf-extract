@@ -39,3 +39,53 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+._*
+/.clerk/
+todo.txt
+*.DS_Store
+
+# firebase
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+.runtimeconfig.json
+.cursor
+notes.txt
+
+/*pycache*/
+.env
+# Automation folder specific ignores
+automation/__pycache__/
+automation/temp_uploads/
+automation/temp_results/
+automation/vision_response_debug.json
+automation/._*
+
+*.json
+*.pdf
