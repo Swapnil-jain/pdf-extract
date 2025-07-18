@@ -1511,15 +1511,18 @@ def process_pdf():
         
         send_progress_update(session_id, "template", 15, "Loading Excel template...")
         
-        # Use fixed template
+        # Use fixed template - handle both local and deployment paths
         template_path = 'template.xlsx'
         if not os.path.exists(template_path):
-            send_progress_update(session_id, "error", 0, "Template file not found")
-            return jsonify({
-                'success': False,
-                'error': 'Template file not found',
-                'session_id': session_id
-            }), 500
+            # Try with automation directory prefix for deployment
+            template_path = os.path.join(os.path.dirname(__file__), 'template.xlsx')
+            if not os.path.exists(template_path):
+                send_progress_update(session_id, "error", 0, "Template file not found")
+                return jsonify({
+                    'success': False,
+                    'error': 'Template file not found',
+                    'session_id': session_id
+                }), 500
         
         send_progress_update(session_id, "convert_invoice", 20, "Converting invoice PDF to images...")
         

@@ -1,1 +1,1 @@
-web: bash start.sh 
+web: gunicorn pdf_processor_api:app --bind 0.0.0.0:$PORT 
