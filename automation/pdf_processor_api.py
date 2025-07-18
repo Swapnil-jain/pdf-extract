@@ -638,9 +638,7 @@ def calculate_overlap(rect1: Dict, rect2: Dict) -> float:
 def map_ocr_to_fields(ocr_results: List[OCRResult], field_mappings: List[FieldMapping] = None) -> Dict[str, Dict]:
     """Map OCR results to Excel fields based on coordinate matching with flexibility"""
     import re  # Import re locally to avoid shadowing issues
-    
-    if field_mappings is None:
-        field_mappings = FIELD_MAPPINGS
+
     
     extracted_data = {}
     
@@ -1323,6 +1321,15 @@ def populate_excel_template(template_path, extracted_data: Dict[str, Dict]) -> s
         df.to_excel(result_path, index=False)
         return result_filename
 
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint for basic connectivity"""
+    return jsonify({
+        'message': 'PDF Processor API is running',
+        'status': 'ok',
+        'timestamp': datetime.now().isoformat()
+    })
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -1330,7 +1337,8 @@ def health_check():
         'status': 'healthy', 
         'timestamp': datetime.now().isoformat(),
         'vision_client_ready': vision_client is not None,
-        'field_mappings_loaded': len(FIELD_MAPPINGS),
+        'invoice_field_mappings_loaded': len(INVOICE_FIELD_MAPPINGS),
+        'export_certificate_field_mappings_loaded': len(EXPORT_CERTIFICATE_FIELD_MAPPINGS),
         'upload_folder': UPLOAD_FOLDER,
         'result_folder': RESULT_FOLDER
     })
@@ -1651,4 +1659,9 @@ def cleanup_files():
 if __name__ == '__main__':
     print("Starting PDF Processor API...")
     print("Make sure to set GOOGLE_APPLICATION_CREDENTIALS environment variable")
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    
+    # Get port from environment variable (for production deployment)
+    port = int(os.getenv('PORT', 5001))
+    debug = os.getenv('DEBUG', 'False').lower() == 'true'
+    
+    app.run(host='0.0.0.0', port=port, debug=debug)
