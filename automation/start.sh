@@ -1,8 +1,11 @@
 #!/bin/bash
 
-# Load environment variables
+# Load environment variables (handle comments properly)
 if [ -f config.env ]; then
-    export $(cat config.env | grep -v '^#' | xargs)
+    # Use source to load the file properly, handling comments and special characters
+    set -a  # automatically export all variables
+    source config.env
+    set +a  # turn off automatic export
 fi
 
 # Ensure directories exist

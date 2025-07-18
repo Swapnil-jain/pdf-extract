@@ -125,21 +125,29 @@ def load_field_mappings_from_env() -> tuple:
         
         if coords_value and cell_value:
             try:
-                # Parse coordinates: "x,y,width,height"
-                x, y, width, height = map(int, coords_value.split(','))
-                coordinate_area = {'x': x, 'y': y, 'width': width, 'height': height}
+                # Parse coordinates: "x,y,width,height" - handle comments and whitespace
+                # Split by comma and clean each value
+                coords_parts = [part.strip().split('#')[0].strip() for part in coords_value.split(',')]
+                if len(coords_parts) >= 4:
+                    x, y, width, height = map(int, coords_parts[:4])
+                    coordinate_area = {'x': x, 'y': y, 'width': width, 'height': height}
+                else:
+                    print(f"Error: Invalid coordinate format for {field_name}: {coords_value}")
+                    continue
                 
                 # Parse Excel cell: "Sheet1:2:2" -> sheet, row, column
                 # Handle sheet names with spaces by splitting on last two colons
-                parts = cell_value.split(':')
+                # Clean the cell value first
+                cell_value_clean = cell_value.split('#')[0].strip()
+                parts = cell_value_clean.split(':')
                 if len(parts) >= 3:
                     # Join all parts except the last two as sheet name
                     sheet_name = ':'.join(parts[:-2])
-                    row_str = parts[-2]
-                    col_str = parts[-1]
+                    row_str = parts[-2].strip()
+                    col_str = parts[-1].strip()
                 else:
                     # Fallback for simple format
-                    sheet_name, row_str, col_str = cell_value.split(':')
+                    sheet_name, row_str, col_str = cell_value_clean.split(':')
                 
                 excel_cell = {
                     'sheet': sheet_name.strip(),  # Remove any extra whitespace
@@ -174,21 +182,29 @@ def load_field_mappings_from_env() -> tuple:
         
         if coords_value and cell_value:
             try:
-                # Parse coordinates: "x,y,width,height"
-                x, y, width, height = map(int, coords_value.split(','))
-                coordinate_area = {'x': x, 'y': y, 'width': width, 'height': height}
+                # Parse coordinates: "x,y,width,height" - handle comments and whitespace
+                # Split by comma and clean each value
+                coords_parts = [part.strip().split('#')[0].strip() for part in coords_value.split(',')]
+                if len(coords_parts) >= 4:
+                    x, y, width, height = map(int, coords_parts[:4])
+                    coordinate_area = {'x': x, 'y': y, 'width': width, 'height': height}
+                else:
+                    print(f"Error: Invalid coordinate format for {field_name}: {coords_value}")
+                    continue
                 
                 # Parse Excel cell: "Sheet1:2:2" -> sheet, row, column
                 # Handle sheet names with spaces by splitting on last two colons
-                parts = cell_value.split(':')
+                # Clean the cell value first
+                cell_value_clean = cell_value.split('#')[0].strip()
+                parts = cell_value_clean.split(':')
                 if len(parts) >= 3:
                     # Join all parts except the last two as sheet name
                     sheet_name = ':'.join(parts[:-2])
-                    row_str = parts[-2]
-                    col_str = parts[-1]
+                    row_str = parts[-2].strip()
+                    col_str = parts[-1].strip()
                 else:
                     # Fallback for simple format
-                    sheet_name, row_str, col_str = cell_value.split(':')
+                    sheet_name, row_str, col_str = cell_value_clean.split(':')
                 
                 excel_cell = {
                     'sheet': sheet_name.strip(),  # Remove any extra whitespace
@@ -212,30 +228,50 @@ def load_field_mappings_from_env() -> tuple:
     print(f"Total export certificate mappings loaded: {len(export_certificate_mappings)}")
     return invoice_mappings, export_certificate_mappings
 
-# Load field mappings from environment
-INVOICE_FIELD_MAPPINGS, EXPORT_CERTIFICATE_FIELD_MAPPINGS = load_field_mappings_from_env()
+# Initialize field mappings as None - will be loaded lazily
+INVOICE_FIELD_MAPPINGS = None
+EXPORT_CERTIFICATE_FIELD_MAPPINGS = None
 
-# Fallback to default mappings if environment loading fails
-if not INVOICE_FIELD_MAPPINGS:
-    print("Warning: No field mappings loaded from environment, using defaults")
-    print("This means your config.env file doesn't have the required field mappings")
-    INVOICE_FIELD_MAPPINGS = [
-        FieldMapping('invoice_number', {'x': 0, 'y': 0, 'width': 300, 'height': 150}, 
-                    {'sheet': 'Sheet1', 'row': 2, 'column': 2}, 10),
-        FieldMapping('invoice_date', {'x': 400, 'y': 0, 'width': 300, 'height': 150}, 
-                    {'sheet': 'Sheet1', 'row': 3, 'column': 2}, 9),
-        FieldMapping('company_name', {'x': 0, 'y': 150, 'width': 400, 'height': 100}, 
-                    {'sheet': 'Sheet1', 'row': 4, 'column': 2}, 8),
-        FieldMapping('total_amount', {'x': 500, 'y': 400, 'width': 200, 'height': 100}, 
-                    {'sheet': 'Sheet1', 'row': 5, 'column': 2}, 10),
-        FieldMapping('pod', {'x': 0, 'y': 300, 'width': 200, 'height': 50}, 
-                    {'sheet': 'Sheet1', 'row': 6, 'column': 2}, 8),
-        FieldMapping('vehicle_description', {'x': 200, 'y': 300, 'width': 300, 'height': 50}, 
-                    {'sheet': 'Sheet1', 'row': 7, 'column': 2}, 7),
-        FieldMapping('chassis_number', {'x': 0, 'y': 350, 'width': 200, 'height': 50}, 
-                    {'sheet': 'Sheet1', 'row': 8, 'column': 2}, 7),
-    ]
-    EXPORT_CERTIFICATE_FIELD_MAPPINGS = []
+def get_field_mappings():
+    """Lazily load field mappings to avoid startup issues"""
+    global INVOICE_FIELD_MAPPINGS, EXPORT_CERTIFICATE_FIELD_MAPPINGS
+    
+    if INVOICE_FIELD_MAPPINGS is None or EXPORT_CERTIFICATE_FIELD_MAPPINGS is None:
+        print("Loading field mappings...")
+        try:
+            INVOICE_FIELD_MAPPINGS, EXPORT_CERTIFICATE_FIELD_MAPPINGS = load_field_mappings_from_env()
+            
+            # Fallback to default mappings if environment loading fails
+            if not INVOICE_FIELD_MAPPINGS:
+                print("Warning: No field mappings loaded from environment, using defaults")
+                print("This means your config.env file doesn't have the required field mappings")
+                INVOICE_FIELD_MAPPINGS = [
+                    FieldMapping('invoice_number', {'x': 0, 'y': 0, 'width': 300, 'height': 150}, 
+                                {'sheet': 'Sheet1', 'row': 2, 'column': 2}, 10),
+                    FieldMapping('invoice_date', {'x': 400, 'y': 0, 'width': 300, 'height': 150}, 
+                                {'sheet': 'Sheet1', 'row': 3, 'column': 2}, 9),
+                    FieldMapping('company_name', {'x': 0, 'y': 150, 'width': 400, 'height': 100}, 
+                                {'sheet': 'Sheet1', 'row': 4, 'column': 2}, 8),
+                    FieldMapping('total_amount', {'x': 500, 'y': 400, 'width': 200, 'height': 100}, 
+                                {'sheet': 'Sheet1', 'row': 5, 'column': 2}, 10),
+                    FieldMapping('pod', {'x': 0, 'y': 300, 'width': 200, 'height': 50}, 
+                                {'sheet': 'Sheet1', 'row': 6, 'column': 2}, 8),
+                    FieldMapping('vehicle_description', {'x': 200, 'y': 300, 'width': 300, 'height': 50}, 
+                                {'sheet': 'Sheet1', 'row': 7, 'column': 2}, 7),
+                    FieldMapping('chassis_number', {'x': 0, 'y': 350, 'width': 200, 'height': 50}, 
+                                {'sheet': 'Sheet1', 'row': 8, 'column': 2}, 7),
+                ]
+                EXPORT_CERTIFICATE_FIELD_MAPPINGS = []
+            
+            print(f"Field mappings loaded successfully: {len(INVOICE_FIELD_MAPPINGS)} invoice, {len(EXPORT_CERTIFICATE_FIELD_MAPPINGS)} export certificate")
+            
+        except Exception as e:
+            print(f"Error loading field mappings: {e}")
+            # Use empty defaults if loading fails
+            INVOICE_FIELD_MAPPINGS = []
+            EXPORT_CERTIFICATE_FIELD_MAPPINGS = []
+    
+    return INVOICE_FIELD_MAPPINGS, EXPORT_CERTIFICATE_FIELD_MAPPINGS
 
 def pdf_to_images(pdf_file) -> List[Image.Image]:
     """Convert PDF to images for OCR processing"""
@@ -1333,12 +1369,15 @@ def root():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
+    # Load field mappings if not already loaded
+    invoice_mappings, export_mappings = get_field_mappings()
+    
     return jsonify({
         'status': 'healthy', 
         'timestamp': datetime.now().isoformat(),
         'vision_client_ready': vision_client is not None,
-        'invoice_field_mappings_loaded': len(INVOICE_FIELD_MAPPINGS),
-        'export_certificate_field_mappings_loaded': len(EXPORT_CERTIFICATE_FIELD_MAPPINGS),
+        'invoice_field_mappings_loaded': len(invoice_mappings),
+        'export_certificate_field_mappings_loaded': len(export_mappings),
         'upload_folder': UPLOAD_FOLDER,
         'result_folder': RESULT_FOLDER
     })
@@ -1533,8 +1572,9 @@ def process_pdf():
         send_progress_update(session_id, "map_fields", 75, "Mapping OCR results to fields...")
         
         # Map OCR results to fields for both PDFs
-        invoice_extracted_data = map_ocr_to_fields(invoice_ocr_results, INVOICE_FIELD_MAPPINGS)
-        export_certificate_extracted_data = map_ocr_to_fields(export_certificate_ocr_results, EXPORT_CERTIFICATE_FIELD_MAPPINGS)
+        invoice_mappings, export_mappings = get_field_mappings()
+        invoice_extracted_data = map_ocr_to_fields(invoice_ocr_results, invoice_mappings)
+        export_certificate_extracted_data = map_ocr_to_fields(export_certificate_ocr_results, export_mappings)
         
         send_progress_update(session_id, "combine_data", 80, "Combining extracted data...")
         
@@ -1663,5 +1703,8 @@ if __name__ == '__main__':
     # Get port from environment variable (for production deployment)
     port = int(os.getenv('PORT', 5001))
     debug = os.getenv('DEBUG', 'False').lower() == 'true'
+    
+    print(f"Starting on port {port}, debug={debug}")
+    print(f"Vision client initialized: {vision_client is not None}")
     
     app.run(host='0.0.0.0', port=port, debug=debug)
