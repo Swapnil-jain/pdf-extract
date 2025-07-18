@@ -25,7 +25,7 @@ load_dotenv('config.env')
 # Translation will be handled per request to avoid initialization issues
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["*"], methods=["GET", "POST", "OPTIONS"])
 
 # Configuration from environment
 UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', 'temp_uploads')
@@ -1236,6 +1236,10 @@ def cleanup_old_files():
         if cleaned_count > 0:
             print(f"Cleaned up {cleaned_count} old temporary files")
             
+        # Force garbage collection to free memory
+        import gc
+        gc.collect()
+            
     except Exception as e:
         print(f"Error during cleanup: {e}")
 
@@ -1646,6 +1650,10 @@ def process_pdf():
             time.sleep(10)  # Keep session for 10 seconds after completion
             if session_id in progress_sessions:
                 del progress_sessions[session_id]
+            
+            # Force garbage collection to free memory
+            import gc
+            gc.collect()
         
         threading.Thread(target=cleanup_session, daemon=True).start()
 
@@ -1710,4 +1718,9 @@ if __name__ == '__main__':
     print(f"Starting on port {port}, debug={debug}")
     print(f"Vision client initialized: {vision_client is not None}")
     
-    app.run(host='0.0.0.0', port=port, debug=debug)
+    # For production, use gunicorn with longer timeout
+    if os.getenv('RENDER'):
+        # This will be handled by gunicorn in production
+        pass
+    else:
+        app.run(host='0.0.0.0', port=port, debug=debug)
