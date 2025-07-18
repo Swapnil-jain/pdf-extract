@@ -118,7 +118,8 @@ const PDFProcessor: React.FC = () => {
             formData.append('invoice_pdf_file', invoicePdfFile);
             formData.append('export_certificate_pdf_file', exportCertificatePdfFile);
 
-            const response = await fetch('http://localhost:5001/api/process-pdf', {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+            const response = await fetch(`${apiUrl}/api/process-pdf`, {
                 method: 'POST',
                 body: formData,
             });
@@ -156,9 +157,10 @@ const PDFProcessor: React.FC = () => {
         if (!result?.download_url) return;
 
         try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
             const downloadUrl = result.download_url.startsWith('http') 
                 ? result.download_url 
-                : `http://localhost:5001${result.download_url}`;
+                : `${apiUrl}${result.download_url}`;
             
             const response = await fetch(downloadUrl);
             if (!response.ok) throw new Error('Download failed');
