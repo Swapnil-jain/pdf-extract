@@ -81,8 +81,8 @@ const PDFProcessor: React.FC = () => {
 
     const simulateProgress = () => {
         setProgress(0);
-        const totalDuration = 400000; // 400 seconds in milliseconds
-        const updateInterval = 2000; // Update every 2 second
+        const totalDuration = 100000; // 100 seconds in milliseconds
+        const updateInterval = 1000; // Update every 1 second
         const progressIncrement = (updateInterval / totalDuration) * 100;
         
         const interval = setInterval(() => {
