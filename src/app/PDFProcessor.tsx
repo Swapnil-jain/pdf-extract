@@ -55,13 +55,14 @@ const PDFProcessor: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
     const [result, setResult] = useState<ProcessingResult | null>(null);
+    const [invoiceError, setInvoiceError] = useState<string | null>(null);
+    const [exportCertificateError, setExportCertificateError] = useState<string | null>(null);
 
     const validatePdfPageCount = async (file: File): Promise<boolean> => {
         try {
             const arrayBuffer = await file.arrayBuffer();
             const pdfDoc = await PDFDocument.load(arrayBuffer);
             if (pdfDoc.getPageCount() > 1) {
-                toast.error(`${file.name} has more than one page. Please upload a single-page PDF.`);
                 return false;
             }
             return true;
@@ -73,11 +74,16 @@ const PDFProcessor: React.FC = () => {
 
     const handleInvoicePdfFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
+        setInvoiceError(null);
         if (file) {
             if (file.type === 'application/pdf') {
                 if (await validatePdfPageCount(file)) {
                     setInvoicePdfFile(file);
                     setResult(null);
+                } else {
+                    setInvoiceError('Please upload a single-page PDF.');
+                    setInvoicePdfFile(null);
+                    event.target.value = '';
                 }
             } else {
                 toast.error('Please select a valid PDF file');
@@ -87,11 +93,16 @@ const PDFProcessor: React.FC = () => {
 
     const handleExportCertificatePdfFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
+        setExportCertificateError(null);
         if (file) {
             if (file.type === 'application/pdf') {
                 if (await validatePdfPageCount(file)) {
                     setExportCertificatePdfFile(file);
                     setResult(null);
+                } else {
+                    setExportCertificateError('Please upload a single-page PDF.');
+                    setExportCertificatePdfFile(null);
+                    event.target.value = '';
                 }
             } else {
                 toast.error('Please select a valid PDF file');
@@ -236,7 +247,8 @@ const PDFProcessor: React.FC = () => {
                                 onChange={handleInvoicePdfFileChange}
                                 className="cursor-pointer"
                             />
-                            {invoicePdfFile && (
+                            {invoiceError && <p className="text-sm text-red-600 mt-1">{invoiceError}</p>}
+                            {invoicePdfFile && !invoiceError && (
                                 <p className="text-sm text-green-600 mt-1">
                                     ✓ {invoicePdfFile.name} ({(invoicePdfFile.size / 1024 / 1024).toFixed(2)} MB)
                                 </p>
@@ -255,7 +267,8 @@ const PDFProcessor: React.FC = () => {
                                 onChange={handleExportCertificatePdfFileChange}
                                 className="cursor-pointer"
                             />
-                            {exportCertificatePdfFile && (
+                            {exportCertificateError && <p className="text-sm text-red-600 mt-1">{exportCertificateError}</p>}
+                            {exportCertificatePdfFile && !exportCertificateError && (
                                 <p className="text-sm text-green-600 mt-1">
                                     ✓ {exportCertificatePdfFile.name} ({(exportCertificatePdfFile.size / 1024 / 1024).toFixed(2)} MB)
                                 </p>
