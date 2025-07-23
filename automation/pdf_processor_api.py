@@ -19,6 +19,7 @@ import re
 from typing import Dict, List
 from dotenv import load_dotenv
 import openpyxl
+from openpyxl.utils import get_column_letter
 from openai import OpenAI
 import httpx
 
@@ -395,6 +396,8 @@ Please provide your response as a single, valid JSON object, following all the r
 
     **Field-Specific Rules:**
     *   `engine_capacity`: Provide the engine capacity in cubic centimeters (cc). If the text says '0.65L', convert it to '650'.
+    *   `length`, `width`, `height`: These dimensions must be in meters. If a value is provided in centimeters (cm), you must convert it to meters (e.g., '420cm' becomes '4.2').
+    *   `weight`: This is the **gross weight** and it should be greater than the `net_weight`.
 
     **OCR Text:**
     ---
@@ -517,6 +520,16 @@ def populate_excel_template(template_path, extracted_data: Dict[str, Dict]) -> s
             
         except Exception as e:
             print(f"Error adding today's date: {e}")
+        
+        # Auto-adjust column widths for better readability
+        for column_cells in worksheet.columns:
+            try:
+                max_length = max(len(str(cell.value)) for cell in column_cells if cell.value)
+                column_letter = get_column_letter(column_cells[0].column)
+                worksheet.column_dimensions[column_letter].width = max_length + 2
+            except (ValueError, TypeError):
+                # Ignore empty columns or other issues
+                pass
         
         # Save the populated workbook
         result_filename = f"populated_{uuid.uuid4().hex}.xlsx"

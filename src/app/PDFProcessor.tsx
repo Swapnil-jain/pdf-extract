@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, Download, FileText, Table, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { PDFDocument } from 'pdf-lib';
 
 interface ExtractedData {
     // Company Information
@@ -55,24 +56,43 @@ const PDFProcessor: React.FC = () => {
     const [progress, setProgress] = useState(0);
     const [result, setResult] = useState<ProcessingResult | null>(null);
 
-    const handleInvoicePdfFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const validatePdfPageCount = async (file: File): Promise<boolean> => {
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdfDoc = await PDFDocument.load(arrayBuffer);
+            if (pdfDoc.getPageCount() > 1) {
+                toast.error(`${file.name} has more than one page. Please upload a single-page PDF.`);
+                return false;
+            }
+            return true;
+        } catch (error) {
+            toast.error(`Failed to read or validate PDF: ${file.name}`);
+            return false;
+        }
+    };
+
+    const handleInvoicePdfFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
             if (file.type === 'application/pdf') {
-                setInvoicePdfFile(file);
-                setResult(null);
+                if (await validatePdfPageCount(file)) {
+                    setInvoicePdfFile(file);
+                    setResult(null);
+                }
             } else {
                 toast.error('Please select a valid PDF file');
             }
         }
     };
 
-    const handleExportCertificatePdfFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleExportCertificatePdfFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
             if (file.type === 'application/pdf') {
-                setExportCertificatePdfFile(file);
-                setResult(null);
+                if (await validatePdfPageCount(file)) {
+                    setExportCertificatePdfFile(file);
+                    setResult(null);
+                }
             } else {
                 toast.error('Please select a valid PDF file');
             }
